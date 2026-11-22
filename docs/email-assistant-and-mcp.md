@@ -15,3 +15,25 @@ MCP clients can use `update_draft` for the same draft fields and attachments, th
 Calendar access uses separate **Read calendar** and **Manage calendar** MCP permissions. The personal calendar exposes `get_calendars`, `get_schedule`, `search_events`, `get_event`, `find_free_time`, `create_event`, `update_events`, and `delete_events`. Calendar-only keys need no mailbox selection. Calendar writes save immediately. Event updates and deletes use series IDs and affect the entire recurring series; these tools record attendees but do not send invitations or cancellations. Supply absolute ISO 8601 times with offsets. Schedule and availability ranges are limited to 90 days.
 
 For management tools, create a separate MCP key in **Admin → API keys**. Its selected domain, account, and mailbox management permissions do not grant access to mail content. This page also provides copyable AI agent instructions after key creation.
+
+## Gemini Dual-Language AI Email Assistant
+
+Mailflare includes a built-in multilingual assistant powered by Google Gemini (e.g. `gemini-2.5-flash`), tailored for reading and drafting emails across languages:
+
+1. **Email Reading View (Summary & Translation)**:
+   - **Tóm tắt (Tiếng Việt)**: Summarizes foreign-language emails into 3-5 concise Vietnamese bullet points outlining sender goals and required actions.
+   - **Dịch sang Tiếng Việt**: Translates the full email body into standard, professional Vietnamese with an instant toggle.
+
+2. **Compose & Reply (Dual-Language Drafting)**:
+   - Integrated into the email composer toolbar with a subtle, neutral document icon (`FileText`).
+   - Enter your prompt or intent in Vietnamese.
+   - Gemini simultaneously generates:
+     - **Bản Tiếng Việt (Xem trước)**: A Vietnamese explanation/preview for your review.
+     - **Bản Tiếng Anh (Gửi đi)**: A professional English draft ready for delivery.
+   - Clicking **"Chèn vào email"** inserts only the English content into the composer, ensuring the recipient never sees your drafting notes.
+
+### Configuration
+Set `GEMINI_API_KEY` in `.dev.vars` for local development, or add it as a Worker Secret using:
+```bash
+npx wrangler secret put GEMINI_API_KEY --name mailflare
+```

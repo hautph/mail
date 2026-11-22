@@ -42,6 +42,7 @@ import { findInviteAttachment } from "@/lib/calendar/invite-attachment";
 import { formatRecipientAddressList, type RecipientAddressStyle } from "@/lib/email/recipient-display";
 import { RecipientList } from "@/components/messages/recipient-list";
 import { useShowFullRecipientAddresses } from "@/components/messages/use-show-full-recipient-addresses";
+import { EmailAiAssistant } from "@/components/messages/email-ai-assistant";
 import type { MessageAttachment, MessageDetailResponse } from "./types";
 import {
   fetchMessageDetail,
@@ -453,6 +454,14 @@ function MessageDetailContent({ messageId }: { messageId: string }) {
                 onToggleDetails={() => setDetailsOpen((open) => !open)}
               />
             </div>
+          </div>
+
+          <div className="px-4 sm:px-0 sm:pl-[78px] sm:pr-4 mb-3">
+            <EmailAiAssistant
+              textBody={message.textBody}
+              htmlBody={message.htmlBody}
+              subject={message.subject}
+            />
           </div>
 
           <SenderCheckNotice

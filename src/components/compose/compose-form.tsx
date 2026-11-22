@@ -29,6 +29,7 @@ import { RecipientInput } from "./recipient-input";
 import { RichTextEditor } from "./rich-text-editor";
 import { ScheduleSendMenu } from "./schedule-send-menu";
 import { isPastSchedule } from "./schedule-send-utils";
+import { AiComposerModal } from "./ai-composer-modal";
 import { DELIVERY_WAIT_MS, SCHEDULED_NOTICE_MS, SENT_NOTICE_MS, resolveSendNotice, splitSendTemplate } from "./send-notice-utils";
 import type { SendNoticeParts, SendResult } from "./send-notice-utils";
 import {
@@ -87,6 +88,7 @@ export function ComposeForm({
 	const [loading, setLoading] = useState(false);
 	const [loadingDraft, setLoadingDraft] = useState(false);
 	const [deletingDraft, setDeletingDraft] = useState(false);
+	const [aiModalOpen, setAiModalOpen] = useState(false);
 	const [scheduledAt, setScheduledAt] = useState<Date | null>(null);
 	const [trackOpens, setTrackOpens] = useTrackOpens();
 	const [followUpDays, setFollowUpDays] = useState<number | null>(null);
@@ -966,6 +968,17 @@ export function ComposeForm({
 								className="hidden"
 								onChange={(event) => addAttachments(event.target.files)}
 							/>
+							<Tooltip label="Trợ lý soạn thư (Việt - Anh)">
+								<button
+									type="button"
+									aria-label="Trợ lý soạn thư"
+									onClick={() => setAiModalOpen(true)}
+									disabled={loading || loadingDraft}
+									className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 disabled:pointer-events-none disabled:opacity-50 max-md:px-2"
+								>
+									<FileText className="h-4 w-4" />
+								</button>
+							</Tooltip>
 							<Tooltip label={t("compose.attachTooltip", { max: attachmentPolicy.maxMb })}>
 								<button
 									type="button"
@@ -1028,6 +1041,17 @@ export function ComposeForm({
 				/>
 				</div>
 			</form>
+			<AiComposerModal
+				isOpen={aiModalOpen}
+				onClose={() => setAiModalOpen(false)}
+				currentSubject={subject}
+				onApply={(generatedEnglishText) => {
+					setHtml((current) => {
+						const formattedHtml = generatedEnglishText.split("\n").map((line) => `<p>${line || "<br>"}</p>`).join("");
+						return hasMeaningfulHtml(current) ? `${current}<br/>${formattedHtml}` : formattedHtml;
+					});
+				}}
+			/>
 		</>
 	);
 }

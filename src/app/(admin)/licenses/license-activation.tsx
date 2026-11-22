@@ -74,7 +74,6 @@ export function LicenseActivation({ children }: { children?: ReactNode }) {
 
 	if (license?.active) {
 		return (
-			<>
 			<Card className="rounded-3xl border-0 bg-white px-6">
 				<CardContent className="flex items-start gap-4 py-8">
 					<span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-700">
@@ -86,15 +85,10 @@ export function LicenseActivation({ children }: { children?: ReactNode }) {
 							{t("licenses.activatedBody", { plan: formatLicensePlan(license.plan, t) })}
 						</p>
 						<p className="mt-1 text-sm text-neutral-500">{license.seatLimit === null ? t("licenses.seatsUnlimited") : t("licenses.seats", { limit: license.seatLimit })}</p>
-						<Button type="button" variant="outline" className="mt-5" onClick={() => void submit("deactivate")} disabled={action !== null}>
-							{action === "deactivate" ? t("licenses.deactivating") : t("licenses.deactivate")}
-						</Button>
 						{status && <p role="status" className="mt-3 text-sm text-neutral-500">{status}</p>}
 					</div>
 				</CardContent>
 			</Card>
-			{children}
-			</>
 		);
 	}
 
