@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/cookies";
 import { getEnv } from "@/lib/cloudflare";
-import { callGemini } from "@/lib/ai/gemini";
+import { generateAiText } from "@/lib/ai/generate";
 import { getLanguageName } from "@/lib/ai/languages";
 
 export async function POST(request: Request) {
@@ -23,7 +23,12 @@ export async function POST(request: Request) {
 			`và tóm tắt lại các ý chính súc tích, rõ ràng bằng ${langName} (3-5 gạch đầu dòng ngắn gọn, nêu rõ người gửi muốn gì/cần phản hồi gì). ` +
 			"Chỉ trả về nội dung tóm tắt bằng ngôn ngữ được yêu cầu, không kèm lời mở đầu hay kết thúc.";
 
-		const summary = await callGemini(text, systemInstruction);
+		const summary = await generateAiText({
+			env,
+			prompt: text,
+			systemInstruction,
+		});
+
 		return NextResponse.json({ summary });
 	} catch (error) {
 		const message = error instanceof Error ? error.message : "Failed to summarize email";

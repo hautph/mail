@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/cookies";
 import { getEnv } from "@/lib/cloudflare";
-import { callGemini } from "@/lib/ai/gemini";
+import { generateAiText } from "@/lib/ai/generate";
 import { getLanguageName } from "@/lib/ai/languages";
 
 export async function POST(request: Request) {
@@ -35,7 +35,11 @@ export async function POST(request: Request) {
 
 		const prompt = `[NGỮ CẢNH EMAIL GỐC / THÔNG TIN LIÊN QUAN]:\n${emailContext || "Soạn thư mới"}\n\n[Ý ĐỊNH / CHỈ THỊ CỦA NGƯỜI DÙNG]:\n${userPrompt || "Hãy soạn thư trả lời lịch sự, đầy đủ ý theo ngữ cảnh trên"}\n\nNgôn ngữ người dùng muốn đọc hiểu: ${userLangName}.\nNgôn ngữ email cần gửi đi: ${targetLangName}.\nHãy trả về JSON { "userVersion": "...", "replyBody": "..." }`;
 
-		const rawOutput = await callGemini(prompt, systemInstruction);
+		const rawOutput = await generateAiText({
+			env,
+			prompt,
+			systemInstruction,
+		});
 		
 		let parsed: { userVersion?: string; vietnameseVersion?: string; replyBody?: string };
 		try {

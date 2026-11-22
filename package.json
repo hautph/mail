@@ -1,6 +1,6 @@
 {
   "name": "mail",
-  "version": "0.5.9",
+  "version": "0.5.10",
   "private": true,
   "scripts": {
     "dev": "npm run db:bundle && vp dev --port 3000",

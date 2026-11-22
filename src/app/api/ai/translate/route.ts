@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/cookies";
 import { getEnv } from "@/lib/cloudflare";
-import { callGemini } from "@/lib/ai/gemini";
+import { generateAiText } from "@/lib/ai/generate";
 import { getLanguageName } from "@/lib/ai/languages";
 
 export async function POST(request: Request) {
@@ -23,7 +23,12 @@ export async function POST(request: Request) {
 			"Văn phong tự nhiên, chuẩn mực thương mại/công sở, giữ nguyên các thông tin như ngày giờ, số liệu, tên riêng. " +
 			"Chỉ trả về nội dung đã dịch, không thêm chú thích hay lời chào đầu/cuối của AI.";
 
-		const translated = await callGemini(text, systemInstruction);
+		const translated = await generateAiText({
+			env,
+			prompt: text,
+			systemInstruction,
+		});
+
 		return NextResponse.json({ translated });
 	} catch (error) {
 		const message = error instanceof Error ? error.message : "Failed to translate email";
