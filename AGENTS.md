@@ -21,3 +21,7 @@ Raw SQL must also work on all three dialects; see "The database is D1 unless `DA
 
 ## UI & AI Design Guidelines
 - **No loud AI icons or colors**: Never use cliche AI styling such as gradient sparkles, glowing stars, rainbow magic wands, or overly vibrant purple/neon badges. Keep UI elements subtle, clean, and seamlessly blended into the existing enterprise mail interface (use standard neutral buttons, simple outline icons like Languages, FileText, Wand/Edit, neutral gray/blue accents matching Mailflare's design system).
+
+## Versioning & Product Naming Guidelines
+- **App Name**: The app is named **"Mail"** (default brand name).
+- **Automatic Version Bump**: Whenever introducing a new feature, improvement, or bug fix, **always increment the patch/minor version in `package.json` automatically** before concluding the task so the application version always progresses with each change.

@@ -968,10 +968,10 @@ export function ComposeForm({
 								className="hidden"
 								onChange={(event) => addAttachments(event.target.files)}
 							/>
-							<Tooltip label="Trợ lý soạn thư (Việt - Anh)">
+							<Tooltip label={t("ai.composer.tooltip")}>
 								<button
 									type="button"
-									aria-label="Trợ lý soạn thư"
+									aria-label={t("ai.composer.tooltip")}
 									onClick={() => setAiModalOpen(true)}
 									disabled={loading || loadingDraft}
 									className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 disabled:pointer-events-none disabled:opacity-50 max-md:px-2"

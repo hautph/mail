@@ -458,8 +458,9 @@ function MessageDetailContent({ messageId }: { messageId: string }) {
 
           <div className="px-4 sm:px-0 sm:pl-[78px] sm:pr-4 mb-3">
             <EmailAiAssistant
-              textBody={message.textBody}
-              htmlBody={message.htmlBody}
+              textBody={body?.textBody ?? null}
+              htmlBody={htmlBody ?? body?.htmlBody ?? null}
+              snippet={message.snippet ?? ""}
               subject={message.subject}
             />
           </div>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/cookies";
 import { getEnv } from "@/lib/cloudflare";
 import { callGemini } from "@/lib/ai/gemini";
+import { getLanguageName } from "@/lib/ai/languages";
 
 export async function POST(request: Request) {
 	const env = getEnv();
@@ -11,15 +12,16 @@ export async function POST(request: Request) {
 	}
 
 	try {
-		const { text } = (await request.json()) as { text?: string };
+		const { text, targetLang = "vi" } = (await request.json()) as { text?: string; targetLang?: string };
 		if (!text?.trim()) {
 			return NextResponse.json({ error: "Text is required" }, { status: 400 });
 		}
 
+		const langName = getLanguageName(targetLang);
 		const systemInstruction = 
-			"Bạn là trợ lý email thông minh. Nhiệm vụ của bạn là đọc nội dung email được cung cấp (bằng bất kỳ ngôn ngữ nào, ví dụ tiếng Anh) " +
-			"và tóm tắt lại các ý chính súc tích, rõ ràng bằng TIẾNG VIỆT (3-5 gạch đầu dòng ngắn gọn, nêu rõ người gửi muốn gì/cần phản hồi gì). " +
-			"Chỉ trả về nội dung tóm tắt tiếng Việt, không kèm lời mở đầu hay kết thúc.";
+			`Bạn là trợ lý email thông minh. Nhiệm vụ của bạn là đọc nội dung email được cung cấp (bằng bất kỳ ngôn ngữ nào) ` +
+			`và tóm tắt lại các ý chính súc tích, rõ ràng bằng ${langName} (3-5 gạch đầu dòng ngắn gọn, nêu rõ người gửi muốn gì/cần phản hồi gì). ` +
+			"Chỉ trả về nội dung tóm tắt bằng ngôn ngữ được yêu cầu, không kèm lời mở đầu hay kết thúc.";
 
 		const summary = await callGemini(text, systemInstruction);
 		return NextResponse.json({ summary });

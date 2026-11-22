@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/cookies";
 import { getEnv } from "@/lib/cloudflare";
 import { callGemini } from "@/lib/ai/gemini";
+import { getLanguageName } from "@/lib/ai/languages";
 
 export async function POST(request: Request) {
 	const env = getEnv();
@@ -16,7 +17,7 @@ export async function POST(request: Request) {
 			return NextResponse.json({ error: "Text is required" }, { status: 400 });
 		}
 
-		const langName = targetLang === "vi" ? "Tiếng Việt" : "Tiếng Anh";
+		const langName = getLanguageName(targetLang);
 		const systemInstruction = 
 			`Bạn là chuyên gia dịch thuật email chuyên nghiệp. Hãy dịch toàn bộ nội dung email được cung cấp sang ${langName}. ` +
 			"Văn phong tự nhiên, chuẩn mực thương mại/công sở, giữ nguyên các thông tin như ngày giờ, số liệu, tên riêng. " +

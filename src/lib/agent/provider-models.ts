@@ -54,8 +54,9 @@ export async function listCompatibleAgentModels(env: CloudflareEnv, input: { pre
 	if (anthropic) headers["anthropic-version"] = "2023-06-01";
 	const response = await fetch(`${baseUrl}/models${anthropic ? "?limit=1000" : ""}`, { headers, signal: AbortSignal.timeout(10_000), redirect: "manual" });
 	if (!response.ok) throw new Error(`Model list request failed (${response.status})`);
-	const json = await response.json() as { data?: { id?: unknown; name?: unknown; display_name?: unknown; pricing?: unknown }[] };
-	const models = (json.data ?? []).filter((item) => typeof item.id === "string" && item.id.length <= 200).map((item) => ({ id: item.id as string, name: typeof item.name === "string" ? item.name : typeof item.display_name === "string" ? item.display_name : item.id as string, rates: input.preset === "openrouter" ? openRouterRates(item.pricing) : undefined })).slice(0, 2_000).sort((a, b) => a.name.localeCompare(b.name));
+	const json = await response.json() as { data?: { id?: unknown; name?: unknown; display_name?: unknown; pricing?: unknown }[]; models?: { name?: unknown; displayName?: unknown }[] };
+	const rawList = json.data ?? (json.models ? json.models.map((m) => ({ id: typeof m.name === "string" ? m.name.replace(/^models\//, "") : "", name: m.displayName || m.name })) : []);
+	const models = rawList.filter((item) => typeof item.id === "string" && item.id.length > 0 && item.id.length <= 200).map((item) => ({ id: item.id as string, name: typeof item.name === "string" ? item.name : typeof item.display_name === "string" ? item.display_name : item.id as string, rates: input.preset === "openrouter" ? openRouterRates(item.pricing) : undefined })).slice(0, 2_000).sort((a, b) => a.name.localeCompare(b.name));
 	if (!models.length) throw new Error("Provider returned no models");
 	return { models, source: "catalog" as const };
 }
