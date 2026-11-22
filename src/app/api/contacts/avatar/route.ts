@@ -12,6 +12,7 @@ import { avatarKeyFor } from "@/app/api/profile/avatar/utils";
 import { getPersonalIdentityForAddress, syncPersonalIdentity } from "@/lib/profile/sync";
 import { contactAvatarKeyFor } from "./utils";
 import { addressesSeenInMailbox } from "../utils";
+import { getDefaultAvatarSvgResponse } from "@/lib/default-avatar";
 
 export async function GET(request: Request) {
 	const env = getEnv();
@@ -19,12 +20,14 @@ export async function GET(request: Request) {
 	const url = new URL(request.url);
 	const mailboxId = url.searchParams.get("mailboxId");
 	const email = normalizeEmailAddress(url.searchParams.get("address") ?? "");
-	if (!mailboxId || !email) return new Response("Not found", { status: 404 });
+	if (!mailboxId || !email) return getDefaultAvatarSvgResponse(email || "User", email);
 
 	const db = getDb(env);
 	const access = await getMailboxAccessLevel(db, user, mailboxId);
-	if (!access?.canRead) return new Response("Not found", { status: 404 });
-	if (!access.isOwner && !(await addressesSeenInMailbox(db, access.mailbox.id, [email], user.id)).has(email)) return new Response("Not found", { status: 404 });
+	if (!access?.canRead) return getDefaultAvatarSvgResponse(email, email);
+	if (!access.isOwner && !(await addressesSeenInMailbox(db, access.mailbox.id, [email], user.id)).has(email)) {
+		return getDefaultAvatarSvgResponse(email, email);
+	}
 	const account = await getPersonalIdentityForAddress(db, access.mailbox.userId, email);
 	const [contact] = await db
 		.select({ avatarKey: contacts.avatarKey })
@@ -32,10 +35,9 @@ export async function GET(request: Request) {
 		.where(and(eq(contacts.userId, access.mailbox.userId), eq(contacts.email, email)))
 		.limit(1);
 	const avatarKey = account ? account.avatarKey : contact?.avatarKey;
-	// Uploading an avatar changes the URL's version, so a cached miss never hides a new one.
-	if (!avatarKey) return new Response("Not found", { status: 404, headers: { "Cache-Control": "private, max-age=600" } });
+	if (!avatarKey) return getDefaultAvatarSvgResponse(email, email);
 
-	return getAvatarImageResponse(request, env.BUCKET, avatarKey);
+	return getAvatarImageResponse(request, env.BUCKET, avatarKey, email);
 }
 
 export async function POST(request: Request) {

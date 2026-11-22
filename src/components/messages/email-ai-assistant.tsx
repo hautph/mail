@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { FileText, Globe2, Loader2, X } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { authFetch } from "@/lib/auth/client";
@@ -206,12 +208,16 @@ export function EmailAiAssistant({ textBody, htmlBody, snippet, subject }: Email
 					) : error ? (
 						<p className="py-1 text-xs text-red-600">{error}</p>
 					) : activeTab === "summary" ? (
-						<div className="whitespace-pre-line text-xs leading-relaxed text-neutral-700">
-							{summary}
+						<div className="text-xs leading-relaxed text-neutral-800 break-words [&_p]:mb-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:mb-1 [&_strong]:font-semibold [&_strong]:text-neutral-900">
+							<ReactMarkdown remarkPlugins={[remarkGfm]}>
+								{summary || ""}
+							</ReactMarkdown>
 						</div>
 					) : (
-						<div className="whitespace-pre-line text-xs leading-relaxed text-neutral-700">
-							{translation}
+						<div className="text-xs leading-relaxed text-neutral-800 break-words [&_p]:mb-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:mb-1 [&_strong]:font-semibold [&_strong]:text-neutral-900">
+							<ReactMarkdown remarkPlugins={[remarkGfm]}>
+								{translation || ""}
+							</ReactMarkdown>
 						</div>
 					)}
 				</div>

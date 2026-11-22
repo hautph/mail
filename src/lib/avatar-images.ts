@@ -1,3 +1,5 @@
+import { getDefaultAvatarSvgResponse } from "./default-avatar";
+
 const MAX_STORED_AVATAR_SIZE = 1024 * 1024;
 const MAX_PREVIEW_AVATAR_SIZE = 32 * 1024;
 
@@ -37,11 +39,33 @@ export async function getAvatarImageResponse(
 	request: Request,
 	bucket: CloudflareEnv["BUCKET"],
 	key: string,
+	fallbackAddress?: string,
 ): Promise<Response> {
 	const url = new URL(request.url);
 	const imageKey = url.searchParams.get("variant") === "preview" ? avatarPreviewKeyFor(key) : key;
 	const object = await bucket.get(imageKey);
-	if (!object) return new Response("Not found", { status: 404 });
+	if (!object) {
+		// If preview variant wasn't generated or missing in bucket, try full image
+		if (url.searchParams.get("variant") === "preview") {
+			const fullObject = await bucket.get(key);
+			if (fullObject) {
+				const headers = new Headers({
+					"Content-Type": fullObject.httpMetadata?.contentType ?? "application/octet-stream",
+					"X-Content-Type-Options": "nosniff",
+					"Content-Security-Policy": "default-src 'none'; img-src 'self'; sandbox",
+					"Cache-Control": url.searchParams.has("v") ? "private, max-age=31536000, immutable" : "private, max-age=300",
+					Vary: "Cookie, Authorization",
+					ETag: fullObject.httpEtag,
+				});
+				if (request.headers.get("If-None-Match") === fullObject.httpEtag) {
+					return new Response(null, { status: 304, headers });
+				}
+				return new Response(fullObject.body, { headers });
+			}
+		}
+		const fallback = fallbackAddress || url.searchParams.get("address") || key;
+		return getDefaultAvatarSvgResponse(fallback, fallback);
+	}
 
 	const headers = new Headers({
 		"Content-Type": object.httpMetadata?.contentType ?? "application/octet-stream",
