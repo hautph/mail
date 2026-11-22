@@ -5,7 +5,7 @@
 # To build from source instead, use docker-compose.yml.
 services:
   mailflare:
-    image: ghcr.io/hieunc229/mailflare:latest
+    image: ghcr.io/hautph/mail:latest
     restart: unless-stopped
     ports:
       - "3000:3000"   # web app and JMAP

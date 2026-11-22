@@ -8,7 +8,7 @@ realtime WebSocket, backup schedule and an SMTP listener for inbound mail.
 ## Quick start
 
 ```bash
-git clone https://github.com/hieunc229/mailflare && cd mailflare
+git clone https://github.com/hautph/mail && cd mail
 cp .env.docker.example .env.docker      # edit: how to receive and send mail
 docker compose up -d --build
 ```
@@ -28,7 +28,7 @@ origin, so they need `APP_URL` (or a direct HTTPS connection) to work.
 ### Prebuilt image (no build)
 
 Every push to `main` publishes a multi-arch (`linux/amd64`, `linux/arm64`)
-image to `ghcr.io/hieunc229/mailflare`. Use it instead of building from source:
+image to `ghcr.io/hautph/mail`. Use it instead of building from source:
 
 ```bash
 cp .env.docker.example .env.docker      # edit: how to receive and send mail

@@ -13,7 +13,6 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { useSelectedMailbox } from "@/components/mailbox-provider";
 import { authFetch } from "@/lib/auth/client";
 import { formatEmailAddress, getEmailAddress } from "@/lib/email/address";
-import { clearMessageDetailCache } from "@/lib/messages/detail-cache";
 import { useCompose } from "@/components/compose/compose-context";
 import { cn } from "@/lib/utils";
 import { SendReview } from "@/components/agent/send-review";
@@ -23,15 +22,15 @@ import { useSheetViewport } from "./use-sheet-viewport";
 import { useTrackOpens } from "./use-track-opens";
 import { FollowUpMenu } from "@/components/follow-ups/follow-up-menu";
 import { followUpOptionKey } from "@/components/follow-ups/follow-up-client-utils";
-import { formatScheduledSendTime } from "@/components/messages/scheduled-send-utils";
-import { buildSendFormData, fetchDraft, formatAttachmentSize } from "./utils";
+import { buildSendFormData, fetchDraft } from "./utils";
 import { RecipientInput } from "./recipient-input";
 import { RichTextEditor } from "./rich-text-editor";
 import { ScheduleSendMenu } from "./schedule-send-menu";
 import { isPastSchedule } from "./schedule-send-utils";
 import { AiComposerModal } from "./ai-composer-modal";
-import { DELIVERY_WAIT_MS, SCHEDULED_NOTICE_MS, SENT_NOTICE_MS, resolveSendNotice, splitSendTemplate } from "./send-notice-utils";
-import type { SendNoticeParts, SendResult } from "./send-notice-utils";
+import { ComposeAttachmentsBar } from "./compose-attachments-bar";
+import { useComposeNotices } from "./use-compose-notices";
+import type { SendResult } from "./send-notice-utils";
 import {
 	applyMailboxSignatureHtml,
 	hasMeaningfulHtml,
@@ -61,6 +60,13 @@ export function ComposeForm({
 	const { t } = useLanguage();
 	const router = useRouter();
 	const { showNotice, openDraftComposer, isCurrentNotice } = useCompose();
+	const { handleSendResultNotice } = useComposeNotices({
+		t,
+		showNotice,
+		openDraftComposer,
+		isCurrentNotice,
+	});
+
 	const { selectedMailbox, setSelectedMailbox, mailboxes } = useSelectedMailbox();
 	const [draftId, setDraftId] = useState<string | null>(null);
 	const [saveFailed, setSaveFailed] = useState(false);
@@ -102,7 +108,6 @@ export function ComposeForm({
 	const [closing, setClosing] = useState(false);
 	const dragStart = useRef<number | null>(null);
 	const [dragY, setDragY] = useState(0);
-	const noticeActionInFlight = useRef(false);
 
 	// Phones: slide the sheet away and let the page behind grow back before unmounting.
 	function dismiss() {
@@ -159,6 +164,7 @@ export function ComposeForm({
 			? selectedMailbox.senderAddresses
 			: [`${selectedMailbox.localPart}@${selectedMailbox.hostname}`];
 	}, [selectedMailbox]);
+
 	const senderOptions = useMemo(
 		() => mailboxes.flatMap((mailbox) => {
 			const addresses = mailbox.senderAddresses?.length
@@ -168,6 +174,7 @@ export function ComposeForm({
 		}),
 		[mailboxes],
 	);
+
 	// Keep the sender on an address the mailbox can send as. A loaded draft's
 	// sender wins whenever it or the mailbox's addresses change.
 	const [prevSenderSync, setPrevSenderSync] = useState({ loadedDraftFrom, senderAddresses });
@@ -448,40 +455,8 @@ export function ComposeForm({
 		setQuotedHtml(null);
 		setAttachments([]);
 		setScheduledAt(null);
-		const notice = resolveSendNotice(data);
-		const subjectLabel = subject.trim() || t("list.noSubject");
-		if (notice.kind === "undo") {
-			const content = buildSubjectNotice("compose.sendingIn", subjectLabel, notice.messageId, true);
-			let undoNoticeId = 0;
-			// The send is queued for the undo window; Undo returns it to Drafts and Send now skips the wait.
-			undoNoticeId = showNotice(content.message, {
-				parts: content.parts,
-				durationMs: notice.durationMs,
-				countdown: { endAt: notice.endAt },
-				// Delivery starts after the window; keep watching until the queue reports a result.
-				onCountdownEnd: () => {
-					if (!isCurrentNotice(undoNoticeId) || noticeActionInFlight.current) return;
-					showSendingNotice(notice.messageId, subjectLabel);
-				},
-				actions: [
-					{ label: t("compose.undoSend"), onClick: () => cancelSend(notice.messageId, "undo", undoNoticeId) },
-					{ label: t("compose.sendNow"), onClick: () => sendNow(notice.messageId, subjectLabel, undoNoticeId) },
-				],
-			}) ?? 0;
-		} else if (notice.kind === "sending") {
-			showSendingNotice(notice.messageId, subjectLabel);
-		} else if (notice.kind === "scheduled") {
-			const message = notice.scheduledAt
-				? t("schedule.sendScheduledFor", { when: formatScheduledSendTime(notice.scheduledAt, t) })
-				: t("compose.scheduled");
-			let scheduledNoticeId = 0;
-			scheduledNoticeId = showNotice(message, {
-				durationMs: SCHEDULED_NOTICE_MS,
-				actions: [{ label: t("schedule.cancelSend"), onClick: () => cancelSend(notice.messageId, "scheduled", scheduledNoticeId) }],
-			}) ?? 0;
-		} else {
-			showNotice(t("compose.sent"));
-		}
+
+		handleSendResultNotice(data, subject);
 		if (!currentDraftId) refreshLists();
 
 		if (onClose) {
@@ -489,123 +464,6 @@ export function ComposeForm({
 			return;
 		}
 		router.push("/sent");
-	}
-
-	/**
-	 * Splits a translated template around {subject} so the subject can link to the
-	 * message, and around {seconds} so only the ticking suffix changes. Passing the
-	 * placeholders back as values leaves them intact for the split.
-	 *
-	 * A message that is still queued is listed under Scheduled; only a delivered one
-	 * lives in Sent, so the link follows the message's state.
-	 */
-	function buildSubjectNotice(
-		key: "compose.sendingIn" | "compose.sendingSubject" | "compose.sentSubject",
-		subjectLabel: string,
-		messageId: string,
-		countdown: boolean,
-	): { message: string; parts: SendNoticeParts } {
-		const template = t(key, { subject: "{subject}", seconds: "{seconds}" });
-		const href = key === "compose.sentSubject" ? `/sent/${messageId}` : `/scheduled/${messageId}`;
-		const parts: SendNoticeParts = {
-			...splitSendTemplate(template, countdown),
-			link: { label: subjectLabel, href },
-		};
-		return { message: t(key, { subject: subjectLabel, seconds: 1 }), parts };
-	}
-
-	/** Shows the message while the queue delivers it and watches for the final status. */
-	function showSendingNotice(messageId: string, subjectLabel: string): number {
-		const content = buildSubjectNotice("compose.sendingSubject", subjectLabel, messageId, false);
-		let noticeId = 0;
-		noticeId = showNotice(content.message, {
-			parts: content.parts,
-			durationMs: DELIVERY_WAIT_MS,
-			poll: {
-				messageId,
-				onStatus: (status) => {
-					if (status === "sent") {
-						// Delivered: refresh the lists even if a newer toast has taken over.
-						showSentNotice(messageId, subjectLabel, noticeId);
-						return;
-					}
-					if (!isCurrentNotice(noticeId)) return;
-					if (status === "failed") showNotice(t("compose.error.sendFailed"), { tone: "error" });
-					else showNotice(null);
-				},
-			},
-		}) ?? 0;
-		return noticeId;
-	}
-
-	function showSentNotice(messageId: string, subjectLabel: string, sourceNoticeId: number) {
-		// The message is delivered, so the lists and the cached detail are stale
-		// whichever toast is on screen; refresh them before the notice check.
-		clearMessageDetailCache();
-		window.dispatchEvent(new Event("mailflare:messages-changed"));
-		if (!isCurrentNotice(sourceNoticeId)) return;
-		const content = buildSubjectNotice("compose.sentSubject", subjectLabel, messageId, false);
-		showNotice(content.message, { parts: content.parts, durationMs: SENT_NOTICE_MS });
-	}
-
-	async function sendNow(messageId: string, subjectLabel: string, sourceNoticeId: number) {
-		if (noticeActionInFlight.current) return;
-		noticeActionInFlight.current = true;
-		try {
-			const response = await authFetch(`/api/messages/${messageId}/send-now`, { method: "POST" });
-			if (response.ok) {
-				// The message is on its way: refresh the lists even if a newer toast has taken over.
-				showSentNotice(messageId, subjectLabel, sourceNoticeId);
-				return;
-			}
-			if (!isCurrentNotice(sourceNoticeId)) return;
-			if (response.status === 409) {
-				// The queued delivery claimed the message first; watch it instead of failing.
-				showSendingNotice(messageId, subjectLabel);
-				return;
-			}
-			if (response.status >= 500) {
-				// The request may have failed before claiming the job; the scheduled send can
-				// still deliver later, so let the status poll decide instead of reporting failure.
-				showSendingNotice(messageId, subjectLabel);
-				return;
-			}
-			const result = await response.json().catch(() => ({})) as { error?: string };
-			if (!isCurrentNotice(sourceNoticeId)) return;
-			showNotice(result.error ?? t("compose.error.sendFailed"), { tone: "error" });
-		} catch {
-			// A dropped response is ambiguous: the message may still be on its way.
-			if (isCurrentNotice(sourceNoticeId)) showSendingNotice(messageId, subjectLabel);
-		} finally {
-			noticeActionInFlight.current = false;
-		}
-	}
-
-	async function cancelSend(messageId: string, source: "undo" | "scheduled", sourceNoticeId: number) {
-		if (noticeActionInFlight.current) return;
-		noticeActionInFlight.current = true;
-		try {
-			const res = await authFetch(`/api/messages/${messageId}/cancel-schedule`, { method: "POST" });
-			if (!res.ok) {
-				if (!isCurrentNotice(sourceNoticeId)) return;
-				// A 409 on the undo toast means the queue claimed it; a scheduled send can also fail for other reasons.
-				showNotice(source === "undo" && res.status === 409 ? t("compose.cancelTooLate") : t("schedule.cancelFailed"), {
-					tone: "error",
-				});
-				return;
-			}
-			// The message is back in Drafts, so the lists and the cached detail are
-			// stale whichever toast is on screen; refresh them before the notice check.
-			clearMessageDetailCache();
-			window.dispatchEvent(new Event("mailflare:messages-changed"));
-			if (!isCurrentNotice(sourceNoticeId)) return;
-			showNotice(t("compose.sendCancelled"));
-			openDraftComposer(messageId);
-		} catch {
-			if (isCurrentNotice(sourceNoticeId)) showNotice(t("schedule.cancelFailed"), { tone: "error" });
-		} finally {
-			noticeActionInFlight.current = false;
-		}
 	}
 
 	async function deleteDraftAndClose() {
@@ -729,57 +587,6 @@ export function ComposeForm({
 		if (selectedMailbox?.id !== option.mailbox.id) setSelectedMailbox(option.mailbox);
 	}
 
-	const attachmentContent = (attachments.length > 0 || storedAttachments.length > 0) && (
-		<div>
-		<div className="flex min-w-0 flex-nowrap gap-2 overflow-x-auto overflow-y-hidden px-3 py-2">
-			{storedAttachments.map((attachment) => (
-				<div
-					key={attachment.id}
-					className="flex max-w-full shrink-0 items-center gap-2 rounded-lg bg-neutral-100 px-2 py-1 text-xs"
-					title={t("compose.carriedOver")}
-				>
-					<FileText className="h-4 w-4 shrink-0 text-neutral-500" />
-					<span className="max-w-48 truncate">{attachment.filename}</span>
-					<span className="text-xs text-neutral-500">{formatAttachmentSize(attachment.size)}</span>
-					<button
-						type="button"
-						onClick={() => void removeStoredAttachment(attachment.id)}
-						className="rounded-full p-1 text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700"
-					>
-						<X className="h-3.5 w-3.5" />
-						<span className="sr-only">{t("compose.removeAttachment")}</span>
-					</button>
-				</div>
-			))}
-			{attachments.map((attachment) => (
-				<div
-					key={attachment.id}
-					className="flex max-w-full shrink-0 items-center gap-2 rounded-lg bg-neutral-100 px-2 py-1 text-xs"
-				>
-					<FileText className="h-4 w-4 shrink-0 text-neutral-500" />
-					<span className="max-w-48 truncate font-medium">{attachment.file.name}</span>
-					<span className="text-xs text-neutral-500">
-						{formatAttachmentSize(attachment.file.size)}
-					</span>
-					<button
-						type="button"
-						onClick={() =>
-							setAttachments((current) =>
-								current.filter((item) => item.id !== attachment.id),
-							)
-						}
-						className="rounded-full p-1 text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700"
-					>
-						<X className="h-3.5 w-3.5" />
-						<span className="sr-only">{t("compose.removeAttachment")}</span>
-					</button>
-				</div>
-			))}
-		</div>
-		<p className="px-3 pb-2 text-xs text-amber-700">{[...attachments.map((item) => item.file.size), ...storedAttachments.map((item) => item.size)].some((size) => size > attachmentPolicy.cloudThresholdBytes) ? t("compose.cloudWarning.will") : t("compose.cloudWarning.may")}</p>
-		</div>
-	);
-
 	// Below md the popup is a bottom sheet: full width, anchored to the visual viewport (so the keyboard never covers the toolbar) and padded by the bottom safe area.
 	const sheetClass = "compose-sheet max-md:inset-x-0 max-md:bottom-[var(--sheet-bottom,0px)] max-md:left-0 max-md:right-0 max-md:top-auto max-md:z-50 max-md:h-[var(--sheet-height,100dvh)] max-md:w-full max-md:translate-x-0 max-md:translate-y-0 max-md:rounded-none max-md:border-0 max-md:pt-[env(safe-area-inset-top)] max-md:pb-[var(--sheet-pad,max(env(safe-area-inset-bottom),1rem))]";
 	const frameClass =
@@ -848,7 +655,6 @@ export function ComposeForm({
 						id={`${mode}-from`}
 						value={selectedMailbox && selectedFrom ? `${selectedMailbox.id}|${selectedFrom}` : ""}
 						onChange={(event) => selectSender(event.target.value)}
-						// placeholder="Select a mailbox first"
 						required
 						disabled={loadingDraft || senderOptions.length === 0}
 						className="h-8 px-0 py-1 text-sm shadow-none focus-visible:ring-0"
@@ -929,7 +735,16 @@ export function ComposeForm({
 					quotedHtml={quotedHtml}
 					disabled={loadingDraft}
 					placeholder={t("compose.bodyPlaceholder")}
-					footerContent={attachmentContent}
+					footerContent={
+						<ComposeAttachmentsBar
+							storedAttachments={storedAttachments}
+							attachments={attachments}
+							attachmentPolicy={attachmentPolicy}
+							onRemoveStored={(id) => void removeStoredAttachment(id)}
+							onRemovePending={(id) => setAttachments((current) => current.filter((item) => item.id !== id))}
+							t={t}
+						/>
+					}
 					toolbarStart={
 						<div className="flex items-center max-md:contents">
 							<Button type="button" variant="secondary" size="sm" onClick={dismiss} className="md:hidden max-md:h-10 max-md:px-3.5 max-md:text-[15px]">
@@ -960,7 +775,6 @@ export function ComposeForm({
 					}
 					toolbarEnd={
 						<>
-							{/* <span className="mx-1 h-5 w-px bg-neutral-200" /> */}
 							<Input
 								ref={attachmentInput}
 								type="file"

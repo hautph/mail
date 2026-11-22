@@ -35,7 +35,7 @@ Paste only the token secret into the `CF_TOKEN` field in step 2. Do not include 
 
 1. Click **Deploy to Cloudflare** and sign in to Cloudflare if prompted.
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/hieunc229/mailflare)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/hautph/mail)
 
 2. Choose the Cloudflare account that owns the domain you want to use.
 3. Set the app name to exactly `mailflare`. Do not rename it. 
@@ -85,7 +85,7 @@ Paste the prompt below into an agent with terminal access. Give it your Cloudfla
 - **Runtime token** (stored as the Worker secret `CF_TOKEN`): use the domain permissions above. Add **Email Sending Edit** to send mail. It must cover the zones you will connect in Mailflare.
 
 ```text
-Install Mailflare from https://github.com/hieunc229/mailflare in my Cloudflare account.
+Install Mailflare from https://github.com/hautph/mail in my Cloudflare account.
 Ask me for my Cloudflare account ID, a scoped deployment API token, and a separate
 runtime CF_TOKEN through a secret input. Never print, commit, or place either token
 in a command argument or a tracked file. Use the deployment token only for Wrangler
@@ -187,7 +187,7 @@ Configure the token and repository details in both Cloudflare and GitHub:
 | Cloudflare Worker | `GITHUB_UPDATE_REPO` | Variable | The installation repository in `owner/repository` format |
 | Cloudflare Worker | `GITHUB_UPDATE_REF` | Optional variable | The installation branch to update; omit it to use the repository's default branch |
 | GitHub repository → Actions | `MAILFLARE_UPDATE_TOKEN` | Repository secret | The same fine-grained personal access token |
-| GitHub repository → Actions | `UPDATE_SOURCE_REPOSITORY` | Optional repository variable | The upstream repository; defaults to `hieunc229/mailflare` |
+| GitHub repository → Actions | `UPDATE_SOURCE_REPOSITORY` | Optional repository variable | The upstream repository; defaults to `hautph/mail` |
 
 The same token can be used for `GITHUB_UPDATE_TOKEN` and `MAILFLARE_UPDATE_TOKEN` when it has all three permissions above. Keep both values secret and limit the token's repository access to the installation repository.
 

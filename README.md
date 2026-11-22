@@ -7,7 +7,7 @@ A self-hosted alternative to Google Workspace. Setup **custom domain Emails**, *
 
 Self-host it on Cloudflare or Docker. **Or try [Mailflare Cloud](https://cloud.mailflare.co?ref=github) with high-deliverable emails** from $4​
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/hieunc229/mailflare)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/hautph/mail)
 
 ## Screenshots
 
@@ -72,7 +72,7 @@ More options: [deployment guide](docs/deployment.md).
 Paste this into an AI agent that has terminal access (Claude Code, Codex, Cursor and similar):
 
 ```text
-Install Mailflare for me from https://github.com/hieunc229/mailflare on my Cloudflare account.
+Install Mailflare for me from https://github.com/hautph/mail on my Cloudflare account.
 
 1. Read README.md, docs/deployment.md and wrangler.jsonc first.
 2. Ask me for my Cloudflare account ID and two API tokens, using a secret input:
