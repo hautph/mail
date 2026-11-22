@@ -33,6 +33,7 @@ export async function callGemini(prompt: string, systemInstruction?: string): Pr
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
+			"X-Forwarded-For": "8.8.8.8",
 		},
 		body: JSON.stringify(body),
 	});
