@@ -1,11 +1,10 @@
-<img src="public/icon-192.png" alt="Mailflare" width="96" />
+<img src="public/icon-192.png" alt="Mail" width="96" />
 
+# Mail
 
-# Mailflare
+A modern, self-hosted alternative to Google Workspace. Built for individuals and teams needing **custom domain emails**, **Calendar**, **Drive**, **Booking**, and **built-in AI assistants** with dual-language translation, summary, and smart composing.
 
-A self-hosted alternative to Google Workspace. Setup **custom domain Emails**, **Calendar, Drive, Booking** and **built-in AI agents**.
-
-Self-host it on Cloudflare or Docker. **Or try [Mailflare Cloud](https://cloud.mailflare.co?ref=github) with high-deliverable emails** from $4​
+Self-host it on Cloudflare or Docker.
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/hautph/mail)
 
@@ -26,53 +25,62 @@ Self-host it on Cloudflare or Docker. **Or try [Mailflare Cloud](https://cloud.m
 
 ## Features
 
-### Apps
+### Apps & Productivity
 
-- **Email**: Custom domain mailboxes, personal or shared, with access you control. Send and receive with Cloudflare Email, Resend or Amazon SES.
-- **Routing rules**: Store, forward, reject or sort incoming mail.
-- **Calendar**: Repeating events with time zones. Attendees get email invitations.
-- **Booking**: Share a public link so anyone can book a free time on your calendar.
-- **Drive**: Store and share files.
-- **AI agents**: Search mail, draft replies and manage events. Connect other AI tools over MCP.
+- **Email**: Custom domain mailboxes (personal or shared) with granular permission control. Send and receive with Cloudflare Email Routing, Resend, or Amazon SES.
+- **Gemini AI Assistant & Email Intelligence**:
+  - **Tóm tắt nhanh**: Summarize long foreign-language emails into clear, actionable bullet points in Vietnamese.
+  - **Dịch thuật 1-chạm**: Instant professional translation of incoming emails.
+  - **Dual-Language AI Composer**: Draft in Vietnamese, preview both Vietnamese explanation and English email, and insert the polished English version directly with a single click.
+- **AI Agents & MCP**: Mailbox assistants to search mail, draft replies, and manage schedules. Full Model Context Protocol (MCP) server support for connecting external AI tools (Claude Code, Cursor, etc.).
+- **Routing Rules**: Store, forward, reject, or automatically sort incoming mail.
+- **Calendar**: Recurring events with time zones, schedule conflict checking, and automatic email invitations.
+- **Booking**: Share a public booking link so anyone can schedule free slots on your calendar.
+- **Drive**: Secure personal and shared file storage.
 
-### Technical
+### Technical Architecture
 
-- **Databases**: Cloudflare D1 (default), PostgreSQL, MySQL, Turso / libSQL, or a local SQLite file. Set `DATABASE_URL` to switch. Works with Supabase, Neon, PlanetScale, TiDB and more. See [Databases](docs/databases.md).
-- **File storage**: Cloudflare R2, Backblaze B2 or AWS S3.
-- **Hosting**: Cloudflare Workers or a single Docker container.
-- **Admin**: Users, API keys, webhooks, audit logs and backups.
-- **Import**: Bring in mail from IMAP, Gmail Takeout, `.eml` and `.mbox` files.
+- **Databases**: Cloudflare D1 (default), PostgreSQL, MySQL, Turso / libSQL, or local SQLite. Set `DATABASE_URL` to switch. Compatible with Supabase, Neon, PlanetScale, TiDB, and more (see [Databases](docs/databases.md)).
+- **File Storage**: Cloudflare R2, Backblaze B2, or AWS S3.
+- **Hosting Options**: Edge deployment on Cloudflare Workers or single Docker container on any server/VPS.
+- **Administration**: Comprehensive user management, passkey/WebAuthn authentication, API keys, webhooks, audit logs, and automated database backups.
+- **Data Import**: Migrate existing emails from IMAP, Gmail Takeout, `.eml`, and `.mbox` files.
 
-Mailflare currently supports 34 languages, including English, Português (Brasil), Português (Portugal), Español, Français, Deutsch, Italiano, Nederlands, Polski, Українська, Русский, Türkçe, 中文（简体）, 日本語, 한국어, Bahasa Indonesia, Bahasa Melayu, Tiếng Việt, ไทย, हिन्दी, বাংলা, मराठी, తెలుగు, தமிழ், ગુજરાતી, ಕನ್ನಡ, മലയാളം, ਪੰਜਾਬੀ, සිංහල, Kiswahili, Hausa, plus العربية, اردو and فارسی (right-to-left).
+### Multilingual Support
 
-## Cost
+Mail supports 34 languages out of the box, including English, Tiếng Việt, Português, Español, Français, Deutsch, Italiano, Nederlands, Polski, Русский, Türkçe, 中文（简体）, 日本語, 한국어, Bahasa Indonesia, العربية, and more.
 
-You can receive and send mail for free.
+---
 
-- **Receiving**: Cloudflare Email Routing is free.
-- **Sending**: Use the free tier of Resend (3,000 emails a month) or Amazon SES. Cloudflare's own sending needs the $5/month Paid Worker plan.
+## Cost & Free Tier
 
-New Amazon SES accounts start in a sandbox. Ask AWS for production access to lift it. Prices change, so check [Resend](https://resend.com/pricing), [Amazon SES](https://aws.amazon.com/ses/pricing/) and [Cloudflare](https://developers.cloudflare.com/workers/platform/pricing/).
+You can receive and send mail completely free:
 
-## Deploy
+- **Receiving**: Cloudflare Email Routing is 100% free with unlimited custom addresses.
+- **Sending**: Free tier on Resend (3,000 emails/month) or Amazon SES. Direct Cloudflare outbound worker sending requires the Cloudflare Workers Paid plan ($5/month).
+- **AI Features**: Built-in Gemini AI can run with Google AI Studio free tier API key (`GEMINI_API_KEY`).
 
-1. **Deploy the app.** Click **Deploy to Cloudflare**. Keep the app name `mailflare`, or it will break.
-2. **Finish setup.** Open the app at `/setup` and create your admin account.
-3. **Connect a domain.** Add a domain from the same Cloudflare account, then create your first mailbox.
+---
 
-> **`CF_TOKEN` is required.** Create a scoped [Cloudflare API token](https://github.com/hieunc229/mailflare/issues/24#issuecomment-5523686105) with these permissions:
->
-> - All accounts: Email Sending:Edit, DNS Settings:Edit, Email Routing Addresses:Edit
-> - All zones: DNS Settings:Edit, Email Routing Rules:Edit, Zone Settings:Edit, DNS:Edit
+## Quick Start & Deployment
 
-More options: [deployment guide](docs/deployment.md).
+### Option 1: Deploy to Cloudflare Workers
 
-### Deploy with an AI agent
+1. **Deploy the application**: Click the **Deploy to Cloudflare** button above, or deploy via Wrangler. (Keep Worker name `mailflare`).
+2. **Configure API Secrets**:
+   - `CF_TOKEN`: Cloudflare API token with Zone, DNS, and Email Routing permissions.
+   - `GEMINI_API_KEY` (optional): For Gemini AI summary, translation, and composer features.
+3. **Finish initial setup**: Open `/setup` in your browser to create the primary administrator account.
+4. **Connect your domain**: Follow the on-screen steps to configure DNS and activate your custom domain mailbox.
 
-Paste this into an AI agent that has terminal access (Claude Code, Codex, Cursor and similar):
+Detailed steps and token scopes are available in the [Deployment Guide](docs/deployment.md).
+
+### Option 2: Deploy with an AI Coding Agent
+
+Paste this prompt into Claude Code, Codex, Cursor, or your preferred agent:
 
 ```text
-Install Mailflare for me from https://github.com/hautph/mail on my Cloudflare account.
+Install the application for me from https://github.com/hautph/mail on my Cloudflare account.
 
 1. Read README.md, docs/deployment.md and wrangler.jsonc first.
 2. Ask me for my Cloudflare account ID and two API tokens, using a secret input:
@@ -81,52 +89,70 @@ Install Mailflare for me from https://github.com/hautph/mail on my Cloudflare ac
 3. Keep the Worker name exactly "mailflare". Create or reuse the D1 database
    "mailflare", the R2 bucket "mailflare-raw", and the queues "mailflare-inbound",
    "mailflare-outbound" and "mailflare-agent".
-4. Install dependencies, run `npm run deploy`, and set CF_TOKEN as a Worker secret.
+4. Install dependencies, run `npm run deploy`, and set CF_TOKEN and optional GEMINI_API_KEY as Worker secrets.
    Do not run remote database migrations yourself. The /setup page does that.
 5. Give me the app URL and anything I still need to do. I will open /setup, create
    the admin account and connect my domain.
 ```
 
-Token permissions and more options: [deployment guide](docs/deployment.md#deploy-with-an-ai-coding-agent).
+### Option 3: Self-host with Docker
 
-### Self-host with Docker
-
-Runs as one container on any server, with SQLite and local files.
+Run as a single container with local SQLite and file storage on any server:
 
 ```bash
 cp .env.docker.example .env.docker
 docker compose up -d --build
 ```
 
-Or skip the build and run the prebuilt image: `docker compose -f docker-compose.image.yml up -d`.
+Or run the prebuilt image:
+```bash
+docker compose -f docker-compose.image.yml up -d
+```
 
-See [self-hosting](docs/self-hosting.md).
+See the [Self-Hosting Guide](docs/self-hosting.md) for volume mounts and reverse proxy configurations.
 
-## Local development
+---
+
+## Local Development
 
 ```bash
-cp .dev.vars.example .dev.vars
+# 1. Clone & install dependencies
+git clone https://github.com/hautph/mail.git
+cd mail
 npm install
+
+# 2. Configure environment
+cp .dev.vars.example .dev.vars
+# Add your CF_TOKEN and GEMINI_API_KEY into .dev.vars
+
+# 3. Apply local database migrations
 npm run db:migrate:local
+
+# 4. Start local development server
 npm run dev
 ```
 
-Add your Cloudflare credentials to `.dev.vars`, then open [localhost:3000](http://localhost:3000). Run `npm run db:seed` to load sample data.
+Open [http://localhost:3000](http://localhost:3000). Run `npm run db:seed` to load sample data.
 
-- `npm run build`: build the Worker
-- `npm run deploy`: build and deploy
-- `npm run lint`: lint and type check
+### Common Commands
 
-A schema change needs a migration for each database type. See [Databases](docs/databases.md#migrations).
+- `npm run dev`: Start local Next.js / Vinext server on port 3000
+- `npm run build`: Bundle migrations and build Cloudflare Worker
+- `npm run deploy`: Build and deploy to Cloudflare Workers
+- `npm run lint`: Run code linter and type-checking
+- `npm run db:bundle`: Regenerate migration bundles for all dialects (SQLite, Postgres, MySQL)
+
+---
 
 ## Documentation
 
-- [Deployment and configuration](docs/deployment.md)
-- [Databases](docs/databases.md)
-- [Sending and receiving providers](docs/providers.md)
-- [API and integrations](docs/api.md)
-- [Email assistant and MCP](docs/email-assistant-and-mcp.md)
-- [Adding a language](docs/localization.md)
+- [Deployment and Configuration](docs/deployment.md)
+- [Databases & Multi-Dialect Migrations](docs/databases.md)
+- [Email Assistant & MCP Protocol](docs/email-assistant-and-mcp.md)
+- [Email Sending and Receiving Providers](docs/providers.md)
+- [Self-Hosting with Docker](docs/self-hosting.md)
+- [API and Webhooks](docs/api.md)
+- [Localization Guide](docs/localization.md)
 - [Troubleshooting](docs/troubleshooting.md)
 
 ## License
